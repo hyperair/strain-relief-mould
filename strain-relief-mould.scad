@@ -8,6 +8,8 @@ $fa = 1;
 bbox_w = 40;
 mold_size = [25, 25, 25];
 
+function sq(x) = x * x;
+
 module split_over_z (bbox = [1000, 1000, 1000])
 {
     difference () {
@@ -75,35 +77,28 @@ module fillet_shape (angle, radius)
 
 module strain_relief_positive (smaller_d, bigger_d, fillet_r)
 {
-    joint_length = (bigger_d - smaller_d);
+    joint_length = (bigger_d - smaller_d) / 2 * 2;
     joint_angle = 180 - atan2 (1, 2);
 
-    difference () {
-        union () {
-            mirror (Z)
-            cylinder (d = smaller_d, h = 15);
+    mirror (Z)
+    cylinder (d = smaller_d, h = 15);
 
-            translate ([0, 0, -epsilon])
-            cylinder (d = bigger_d, h = 15);
+    translate ([0, 0, -epsilon])
+    cylinder (d = bigger_d, h = 15);
 
-            mirror (Z)
-            cylinder (d1 = bigger_d, d2 = smaller_d, h = joint_length);
-
-            translate ([0, 0, -joint_length])
-            rotate_extrude ()
-            translate ([smaller_d / 2 - epsilon, 0])
-            rotate (-90, Z)
-            fillet_shape (joint_angle, fillet_r);
-        }
-
+    step_dist = (bigger_d - smaller_d) / 2;
+    translate ([0, 0, fillet_r - sqrt (sq (fillet_r) - sq (step_dist + epsilon * 3 - fillet_r))])
+    intersection () {
+        mirror (Z)
         rotate_extrude ()
-        translate ([bigger_d / 2 + epsilon, 0])
-        mirror (X)
-        rotate (-90 + 180 - joint_angle, Z)
-        fillet_shape (joint_angle, fillet_r);
+        mirror (Z)
+        translate ([smaller_d / 2 - epsilon * 2, 0])
+        fillet_shape (90, fillet_r);
+
+        cylinder (d = bigger_d, h = 1000, center = true);
     }
 }
 
 mold ()
 rotate (90, Y)
-strain_relief_positive (3.5, 5, 3);
+strain_relief_positive (3.5, 5, 8);
